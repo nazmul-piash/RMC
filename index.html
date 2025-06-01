@@ -28,14 +28,37 @@
             margin-bottom: 8px;
             font-weight: bold;
         }
-        input[type="number"], input[type="text"] {
+        /* --- Existing input styling (apply to select too) --- */
+        input[type="number"],
+        input[type="text"],
+        select { /* Added 'select' here */
             width: calc(100% - 22px);
             padding: 10px;
             margin-bottom: 15px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 16px;
+            /* Added for dropdown specific styling */
+            background-color: white; /* Ensure consistent background */
+            -webkit-appearance: none; /* Remove default browser styling for dropdown */
+            -moz-appearance: none;    /* Remove default browser styling for dropdown */
+            appearance: none;         /* Remove default browser styling for dropdown */
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23333333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>'); /* Custom dropdown arrow */
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 24px;
+            cursor: pointer;
         }
+
+        /* --- Focus state for inputs and select --- */
+        input[type="number"]:focus,
+        input[type="text"]:focus,
+        select:focus {
+            border-color: #007bff; /* Highlight on focus */
+            outline: none; /* Remove default outline */
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); /* Subtle shadow on focus */
+        }
+
         button {
             background-color: #007bff;
             color: white;
@@ -76,8 +99,20 @@
         <p>This tool helps you calculate how much Taka will be received from a Euro transfer, or how many Euros you need to send to receive a specific amount of Taka, factoring in the remittance bonus.</p>
 
         <div>
-            <label for="euroAmount">Euro Amount to Send:</label>
-            <input type="number" id="euroAmount" placeholder="e.g., 376">
+            <label for="sendingCurrency">Sending Currency:</label>
+            <select id="sendingCurrency" onchange="updateExchangeRatePlaceholder()">
+                <option value="EUR">Euro (EUR)</option>
+                <option value="USD" selected>US Dollar (USD)</option>
+                <option value="GBP">Pound Sterling (GBP)</option>
+                <option value="SAR">Saudi Riyal (SAR)</option>
+                <option value="AED">UAE Dirham (AED)</option>
+                <option value="MYR">Malaysian Ringgit (MYR)</option>
+                </select>
+        </div>
+
+        <div>
+            <label for="sendingAmount">Amount to Send:</label>
+            <input type="number" id="sendingAmount" placeholder="e.g., 500">
             <button onclick="calculateReceivedTaka()">Calculate Received Taka</button>
         </div>
 
@@ -86,14 +121,14 @@
         <div>
             <label for="desiredTakaAmount">Desired Taka Amount to Receive:</label>
             <input type="number" id="desiredTakaAmount" placeholder="e.g., 52000">
-            <button onclick="calculateEurosToSend()">Calculate Euros to Send</button>
-        </div>
-        
+            <button onclick="calculateSendingCurrencyAmount()">Calculate Sending Currency Amount Needed</button>
+            </div>
+
         <hr style="margin: 30px 0;">
 
         <div>
-            <label for="exchangeRate">Euro to Taka Exchange Rate (1 EUR = X BDT):</label>
-            <input type="number" id="exchangeRate" value="117.5" step="0.01">
+            <label for="exchangeRate">Exchange Rate (1 <span id="selectedCurrencyLabel">USD</span> = X BDT):</label>
+            <input type="number" id="exchangeRate" value="122.13" step="0.01">
         </div>
 
         <div>
@@ -108,51 +143,78 @@
     </div>
 
     <script>
+        const typicalExchangeRates = {
+            "EUR": 125.00,
+            "USD": 122.13,
+            "GBP": 164.65,
+            "SAR": 32.55,
+            "AED": 33.24,
+            "MYR": 28.69
+        };
+    
         function getInputValue(id) {
             return parseFloat(document.getElementById(id).value);
         }
-
+    
         function displayResult(message) {
             document.getElementById('results').innerHTML = message;
             document.getElementById('errorMessages').textContent = '';
         }
-
+    
         function displayError(message) {
             document.getElementById('errorMessages').textContent = message;
             document.getElementById('results').innerHTML = '';
         }
-
+    
+        function updateExchangeRatePlaceholder() {
+            const selectedCurrency = document.getElementById('sendingCurrency').value;
+            const exchangeRateInput = document.getElementById('exchangeRate');
+            const selectedCurrencyLabel = document.getElementById('selectedCurrencyLabel');
+    
+            selectedCurrencyLabel.textContent = selectedCurrency;
+    
+            if (typicalExchangeRates[selectedCurrency]) {
+                exchangeRateInput.value = typicalExchangeRates[selectedCurrency].toFixed(2);
+            } else {
+                exchangeRateInput.value = '';
+                exchangeRateInput.placeholder = 'Enter rate for ' + selectedCurrency;
+            }
+        }
+    
         function calculateReceivedTaka() {
-            const euroAmount = getInputValue('euroAmount');
+            const sendingAmount = getInputValue('sendingAmount');
             const exchangeRate = getInputValue('exchangeRate');
             const remittancePercentage = getInputValue('remittancePercentage');
-
-            if (isNaN(euroAmount) || isNaN(exchangeRate) || isNaN(remittancePercentage)) {
-                displayError("Please enter valid numbers for Euro Amount, Exchange Rate, and Remittance Percentage.");
+            const selectedCurrency = document.getElementById('sendingCurrency').value;
+    
+            if (isNaN(sendingAmount) || isNaN(exchangeRate) || isNaN(remittancePercentage)) {
+                displayError("Please enter valid numbers for Amount to Send, Exchange Rate, and Remittance Percentage.");
                 return;
             }
-            if (euroAmount <= 0 || exchangeRate <= 0 || remittancePercentage < 0) {
+            if (sendingAmount <= 0 || exchangeRate <= 0 || remittancePercentage < 0) {
                 displayError("All input values must be positive, and remittance percentage cannot be negative.");
                 return;
             }
-
-            const convertedTaka = euroAmount * exchangeRate;
+    
+            const convertedTaka = sendingAmount * exchangeRate;
             const bonus = convertedTaka * (remittancePercentage / 100);
             const totalReceivedTaka = convertedTaka + bonus;
-
+    
             displayResult(
-                `If you send <strong>${euroAmount.toFixed(2)} Euros</strong>:<br>` +
+                `If you send <strong>${sendingAmount.toFixed(2)} ${selectedCurrency}</strong>:<br>` +
                 `Initial Taka (before bonus): ${convertedTaka.toFixed(2)} Taka<br>` +
                 `Remittance Bonus (${remittancePercentage}%): ${bonus.toFixed(2)} Taka<br>` +
                 `Total Taka the receiver will get: <strong>${totalReceivedTaka.toFixed(2)} Taka</strong>`
             );
         }
-
-        function calculateEurosToSend() {
+    
+        // Renamed function from calculateEurosToSend to be more generic
+        function calculateSendingCurrencyAmount() {
             const desiredTakaAmount = getInputValue('desiredTakaAmount');
             const exchangeRate = getInputValue('exchangeRate');
             const remittancePercentage = getInputValue('remittancePercentage');
-
+            const selectedCurrency = document.getElementById('sendingCurrency').value;
+    
             if (isNaN(desiredTakaAmount) || isNaN(exchangeRate) || isNaN(remittancePercentage)) {
                 displayError("Please enter valid numbers for Desired Taka Amount, Exchange Rate, and Remittance Percentage.");
                 return;
@@ -161,26 +223,22 @@
                 displayError("All input values must be positive, and remittance percentage cannot be negative.");
                 return;
             }
-
-            // Amount needed before bonus
+    
             const takaBeforeBonus = desiredTakaAmount / (1 + (remittancePercentage / 100));
-            // Euros to send
-            const eurosToSend = takaBeforeBonus / exchangeRate;
-
+            const sendingCurrencyAmount = takaBeforeBonus / exchangeRate;
+    
             displayResult(
                 `To ensure the receiver gets <strong>${desiredTakaAmount.toFixed(2)} Taka</strong> (including bonus):<br>` +
                 `Amount in Taka needed before bonus: ${takaBeforeBonus.toFixed(2)} Taka<br>` +
-                `You need to send approximately: <strong>${eurosToSend.toFixed(2)} Euros</strong>`
+                `You need to send approximately: <strong>${sendingCurrencyAmount.toFixed(2)} ${selectedCurrency}</strong>`
             );
         }
-
-        // Set a default value for the exchange rate when the page loads, using the previous context's rate
+    
         document.addEventListener('DOMContentLoaded', (event) => {
-            // Updated for June 2025: Using a more current approximation for the exchange rate
-            // Note: Users should update this to the real-time rate before calculating.
-            document.getElementById('exchangeRate').value = 125.00; // Placeholder for current exchange rate
+            document.getElementById('sendingCurrency').value = 'USD';
+            updateExchangeRatePlaceholder();
         });
-
+    
     </script>
 </body>
 </html>
