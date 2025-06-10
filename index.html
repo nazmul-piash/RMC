@@ -85,7 +85,6 @@
             margin-top: 10px;
             font-weight: bold;
         }
-        /* --- New CSS for the footer --- */
         .footer {
             text-align: center;
             margin-top: 30px;
@@ -146,18 +145,21 @@
         <div class="error" id="errorMessages"></div>
 
         <div class="footer">
-            &copy; 2024 Copyright <a href="https://kazi-hub.netlify.app/" target="_blank">KNHP</a> <span>Kazi Nazmul Huda</span> 
-        </div>
+            &copy; 2024 Copyright Kazi Nazmul Huda
         </div>
 
+    </div>
+
     <script>
+        // Store typical exchange rates for demonstration.
+        // IMPORTANT: These are illustrative. For a real application, you'd fetch these from an API or manually update.
         const typicalExchangeRates = {
-            "USD": 122.13,
-            "EUR": 125.00,
-            "GBP": 164.65,
-            "SAR": 32.55,
-            "AED": 33.24,
-            "MYR": 28.69
+            "USD": 122.13, // Example US Dollar to BDT rate
+            "EUR": 125.00, // Example Euro to BDT rate
+            "GBP": 164.65, // Example Pound Sterling to BDT rate
+            "SAR": 32.55,  // Example Saudi Riyal to BDT rate
+            "AED": 33.24,  // Example UAE Dirham to BDT rate
+            "MYR": 28.69   // Example Malaysian Ringgit to BDT rate
         };
 
         function getInputValue(id) {
@@ -179,12 +181,14 @@
             const exchangeRateInput = document.getElementById('exchangeRate');
             const selectedCurrencyLabel = document.getElementById('selectedCurrencyLabel');
 
+            // Update the label next to "Exchange Rate"
             selectedCurrencyLabel.textContent = selectedCurrency;
 
+            // Set the placeholder/value for the exchange rate from typical rates
             if (typicalExchangeRates[selectedCurrency]) {
                 exchangeRateInput.value = typicalExchangeRates[selectedCurrency].toFixed(2);
             } else {
-                exchangeRateInput.value = '';
+                exchangeRateInput.value = ''; // Clear if no typical rate found
                 exchangeRateInput.placeholder = 'Enter rate for ' + selectedCurrency;
             }
         }
@@ -195,6 +199,7 @@
             const remittancePercentage = getInputValue('remittancePercentage');
             const selectedCurrency = document.getElementById('sendingCurrency').value;
 
+            // Input validation
             if (isNaN(sendingAmount) || isNaN(exchangeRate) || isNaN(remittancePercentage)) {
                 displayError("Please enter valid numbers for Amount to Send, Exchange Rate, and Remittance Percentage.");
                 return;
@@ -204,14 +209,16 @@
                 return;
             }
 
+            // Calculations
             const convertedTaka = sendingAmount * exchangeRate;
             const bonus = convertedTaka * (remittancePercentage / 100);
             const totalReceivedTaka = convertedTaka + bonus;
 
+            // Display results
             displayResult(
                 `If you send <strong>${sendingAmount.toFixed(2)} ${selectedCurrency}</strong>:<br>` +
                 `Initial Taka (before bonus): ${convertedTaka.toFixed(2)} Taka<br>` +
-                `Remittance Bonus (${remittancePercentage}%): ${bonus.toFixed(2)} Taka<br>` +
+                `<strong>Remittance Bonus (${remittancePercentage}%): ${bonus.toFixed(2)} Taka</strong><br>` +
                 `Total Taka the receiver will get: <strong>${totalReceivedTaka.toFixed(2)} Taka</strong>`
             );
         }
@@ -222,6 +229,7 @@
             const remittancePercentage = getInputValue('remittancePercentage');
             const selectedCurrency = document.getElementById('sendingCurrency').value;
 
+            // Input validation
             if (isNaN(desiredTakaAmount) || isNaN(exchangeRate) || isNaN(remittancePercentage)) {
                 displayError("Please enter valid numbers for Desired Taka Amount, Exchange Rate, and Remittance Percentage.");
                 return;
@@ -231,9 +239,11 @@
                 return;
             }
 
+            // Calculations
             const takaBeforeBonus = desiredTakaAmount / (1 + (remittancePercentage / 100));
             const sendingCurrencyAmount = takaBeforeBonus / exchangeRate;
 
+            // Display results
             displayResult(
                 `To ensure the receiver gets <strong>${desiredTakaAmount.toFixed(2)} Taka</strong> (including bonus):<br>` +
                 `Amount in Taka needed before bonus: ${takaBeforeBonus.toFixed(2)} Taka<br>` +
@@ -241,9 +251,10 @@
             );
         }
 
+        // Initialize currency selection and exchange rate on page load
         document.addEventListener('DOMContentLoaded', (event) => {
-            document.getElementById('sendingCurrency').value = 'USD';
-            updateExchangeRatePlaceholder();
+            document.getElementById('sendingCurrency').value = 'USD'; // Set USD as default selection
+            updateExchangeRatePlaceholder(); // Update the exchange rate input and label accordingly
         });
 
     </script>
